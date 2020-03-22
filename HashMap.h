@@ -7,7 +7,11 @@
 #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #endif // DEBUG
 
- // Hash map class template
+/*
+* Hash map class template
+* 키(Key), 해시 함수(Hash Function), 해시(Hash), 값(value), 저장소(Bucket, Slot)
+* Collision Resolution: Separate Chaining
+*/
 template <typename KEY, typename VALUE, size_t TABLE_SIZE = 8, typename HASH_FUNC = SimpleHash<KEY, TABLE_SIZE>>
 class HashMap
 {
@@ -16,16 +20,21 @@ class HashMap
 
 public:
 	HashMap( ) :
-		m_Tables( ),
+		m_Table( ),
 		m_HashFunction( )
 	{ }
 
 	~HashMap( )
 	{
-		// destroy all buckets one by one
+		// destroy all slots one by one
 		for ( size_t index = 0; index < TABLE_SIZE; ++index )
 		{
-			Node<KEY, VALUE>* pEntry = m_Tables[index];
+			Node<KEY, VALUE>* pEntry = m_Table[index];
+			if ( nullptr == pEntry )
+			{
+				continue;
+			}
+
 			Node<KEY, VALUE>* pPrev = nullptr;
 
 			while ( nullptr != pEntry )
@@ -37,15 +46,15 @@ public:
 				pPrev = nullptr;
 			}
 
-			m_Tables[index] = nullptr;
+			m_Table[index] = nullptr;
 		}
 	}
 
 	bool get(const KEY& key, VALUE& value)
 	{
-		unsigned long hashValue = m_HashFunction(key);
+		unsigned long slot = m_HashFunction(key);
 
-		Node<KEY, VALUE>* pEntry = m_Tables[hashValue];
+		Node<KEY, VALUE>* pEntry = m_Table[slot];
 		while ( nullptr != pEntry )
 		{
 			if ( pEntry->getKey( ) == key )
@@ -60,11 +69,11 @@ public:
 		return false;
 	}
 
-	void put(const KEY& key, const VALUE& value)
+	void insert(const KEY& key, const VALUE& value)
 	{
-		unsigned long hashValue = m_HashFunction(key);
+		unsigned long slot = m_HashFunction(key);
 		Node<KEY, VALUE>* pPrev = nullptr;
-		Node<KEY, VALUE>* pEntry = m_Tables[hashValue];
+		Node<KEY, VALUE>* pEntry = m_Table[slot];
 
 		while ( nullptr != pEntry && pEntry->getKey( ) != key )
 		{
@@ -79,8 +88,8 @@ public:
 
 			if ( nullptr == pPrev )
 			{
-				// insert as first bucket
-				m_Tables[hashValue] = pEntry;
+				// insert as first slot
+				m_Table[slot] = pEntry;
 			}
 			else
 			{
@@ -94,11 +103,12 @@ public:
 		}
 	}
 
-	void remove(const KEY &key)
+	void remove(const KEY& key)
 	{
-		unsigned long hashValue = m_HashFunction(key);
+		unsigned long slot = m_HashFunction(key);
 		Node<KEY, VALUE>* pPrev = nullptr;
-		Node<KEY, VALUE>* pEntry = m_Tables[hashValue];
+		Node<KEY, VALUE>* pEntry = m_Table[slot];
+		assert(nullptr != pEntry); // key not found
 
 		while ( nullptr != pEntry && pEntry->getKey( ) != key )
 		{
@@ -106,27 +116,18 @@ public:
 			pEntry = &pEntry->getNextNode( );
 		}
 
-		if (nullptr == pEntry )
+		if ( nullptr == pPrev )
 		{
-			// key not found
-			assert(false);
-			return;
+			// remove first slot of the list
+			m_Table[slot] = &pEntry->getNextNode( );
 		}
 		else
 		{
-			if ( nullptr == pPrev )
-			{
-				// remove first bucket of the list
-				m_Tables[hashValue] = &pEntry->getNextNode( );
-			}
-			else
-			{
-				pPrev->setNextNode(pEntry->getNextNode( ));
-			}
-
-			delete pEntry;
-			pEntry = nullptr;
+			pPrev->setNextNode(pEntry->getNextNode( ));
 		}
+
+		delete pEntry;
+		pEntry = nullptr;
 	}
 
 private:
@@ -134,6 +135,6 @@ private:
 	const HashMap& operator=(const HashMap&) = delete;
 
 private:
-	Node<KEY, VALUE>* m_Tables[TABLE_SIZE];
+	Node<KEY, VALUE>* m_Table[TABLE_SIZE];
 	HASH_FUNC m_HashFunction;
 };

@@ -3,8 +3,6 @@
 #include <assert.h>
 #include "HashMap.h"
 
-using namespace std;
-
 constexpr auto MAX_TABLE_SIZE = 65536 - 1;
 
 struct MyKeyHash
@@ -17,21 +15,21 @@ struct MyKeyHash
 
 int main( )
 {
-	HashMap<int, string, MAX_TABLE_SIZE, MyKeyHash> hmap;
-	hmap.put(1, "1");
-	hmap.put(2, "2");
-	hmap.put(3, "3");
+	HashMap<int, std::string, MAX_TABLE_SIZE, MyKeyHash> hashMap;
+	hashMap.insert(1, "1");
+	hashMap.insert(2, "2");
+	hashMap.insert(3, "3");
 
-	string value;
-	bool result = hmap.get(2, value);
+	std::string value;
+	bool result = hashMap.get(4, value);
 	assert(result);
 	assert(value == "2");
 
-	result = hmap.get(3, value);
+	result = hashMap.get(3, value);
 	assert(result);
 	assert(value == "3");
 
-	hmap.remove(3);
-	result = hmap.get(3, value);
+	hashMap.remove(3);
+	result = hashMap.get(3, value);
 	assert(!result);
 }
